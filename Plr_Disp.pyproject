@@ -1,5 +1,6 @@
 {
     "files": [
+        "flight_controller.py",
         "heading_plotter.py",
         "main.py",
         "target_plotter.py"
