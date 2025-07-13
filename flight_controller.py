@@ -18,11 +18,11 @@ class Flight_Controller(QObject):
         self.tcp_socket.errorOccurred.connect(lambda e: print(f"[TCP Error] {e}"))
 
         # Connect to TCP server
-        self.tcp_socket.connectToHost(QHostAddress("127.0.0.1"), 5000) # update port and ip
+        self.tcp_socket.connectToHost(QHostAddress("0.0.0.0"), 5002) # update port and ip
 
         # --- UDP Socket for heading updates ---
         self.udp_socket = QUdpSocket(self)
-        self.udp_socket.bind(QHostAddress.AnyIPv4, 5001)  # update port
+        self.udp_socket.bind(QHostAddress("127.0.0.1"), 5001)  # update port
         self.udp_socket.readyRead.connect(self.handle_udp_data)
 
     def handle_udp_data(self):

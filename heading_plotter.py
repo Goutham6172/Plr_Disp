@@ -9,7 +9,7 @@ def polar_to_cartesian(r, azimuth):
     y = -r * math.cos(angle_rad)
     return x, y
 
-class HeadingPlotter:
+class Heading_Plotter:
     def __init__(self, scene):
         self.scene = scene
         self.arrow = None

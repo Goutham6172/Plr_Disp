@@ -1,9 +1,9 @@
 # mainwindow.py
 from PySide6.QtWidgets import QApplication, QGraphicsScene, QGraphicsView, QMainWindow
 from PySide6.QtCore import Qt
-from target_plotter import TargetPlotter
-from heading_plotter import HeadingPlotter
-from radar_controller import RadarController
+from target_plotter import Target_Plotter
+from heading_plotter import Heading_Plotter
+from flight_controller import Flight_Controller
 import sys
 
 class MainWindow(QMainWindow):
@@ -23,11 +23,11 @@ class MainWindow(QMainWindow):
         self.scene.addLine(0, -300, 0, 300)
 
         # Initialize plotting components
-        self.target_plotter = TargetPlotter(self.scene)
-        self.heading_plotter = HeadingPlotter(self.scene)
+        self.target_plotter = Target_Plotter(self.scene)
+        self.heading_plotter = Heading_Plotter(self.scene)
 
         # Controller: handles incoming data and updates plots
-        self.controller = RadarController(self.target_plotter, self.heading_plotter)
+        self.controller = Flight_Controller(self.target_plotter, self.heading_plotter)
 
 
 if __name__ == "__main__":
