@@ -52,9 +52,12 @@ class Flight_Controller(QObject):
 
     def handle_tcp_data(self):
         self.tcp_buffer += self.tcp_socket.readAll().data()
+        targets = []
         while len(self.tcp_buffer) >= 16:
             r, az_rel, timestamp = struct.unpack('ffQ', self.tcp_buffer[:16])
             self.tcp_buffer = self.tcp_buffer[16:]
-
             heading = self.find_nearest_heading(timestamp)
-            self.target_plotter.update_targets([(r, az_rel)], heading)
+            targets.append((r, az_rel))
+
+        if targets:
+            self.target_plotter.update_targets(targets, heading)
