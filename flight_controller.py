@@ -29,12 +29,15 @@ class Flight_Controller(QObject):
     def handle_udp_data(self):
         while self.udp_socket.hasPendingDatagrams():
             datagram, _, _ = self.udp_socket.readDatagram(12)
-            if len(datagram) == 12:
-                heading, timestamp = struct.unpack('fQ', datagram)
+            if len(datagram) >= 12:
+                heading, timestamp = struct.unpack('<fQ', datagram)
                 self.heading_history.append((timestamp, heading))
                 self.heading_plotter.update_heading(heading)
 
     def find_nearest_heading(self, timestamp):
+        if not self.heading_history:
+            # Fallback: return default heading (e.g., 0) if no heading yet
+            return
         times = [ts for ts, _ in self.heading_history]
         idx = bisect.bisect_left(times, timestamp)
         if idx == 0:
