@@ -1,15 +1,16 @@
 # flight_controller.py
 from PySide6.QtCore import QObject, QDataStream, QIODevice, QByteArray
 from PySide6.QtNetwork import QTcpSocket, QHostAddress, QUdpSocket
-import struct
+import struct, bisect, time
+from collections import deque
 
 class Flight_Controller(QObject):
     def __init__(self, target_plotter, heading_plotter):
         super().__init__()
         self.target_plotter = target_plotter
         self.heading_plotter = heading_plotter
-        self.current_heading = 0
-        self.targets = []
+        self.heading_history = deque(maxlen=100)  # list of (timestamp_ms, heading)
+        self.tcp_buffer = b''
 
         # --- TCP Socket for target data ---
         self.tcp_socket = QTcpSocket(self)
@@ -27,21 +28,30 @@ class Flight_Controller(QObject):
 
     def handle_udp_data(self):
         while self.udp_socket.hasPendingDatagrams():
-            datagram, _, _ = self.udp_socket.readDatagram(4)
-            if len(datagram) != 4:
-                continue
-            self.current_heading = struct.unpack('f', datagram)[0]
-            self.heading_plotter.update_heading(self.current_heading)
+            datagram, _, _ = self.udp_socket.readDatagram(12)
+            if len(datagram) == 12:
+                heading, timestamp = struct.unpack('fQ', datagram)
+                self.heading_history.append((timestamp, heading))
+                self.heading_plotter.update_heading(heading)
+
+    def find_nearest_heading(self, timestamp):
+        times = [ts for ts, _ in self.heading_history]
+        idx = bisect.bisect_left(times, timestamp)
+        if idx == 0:
+            return self.heading_history[0][1]
+        elif idx >= len(times):
+            return self.heading_history[-1][1]
+        else:
+            before = self.heading_history[idx - 1]
+            after = self.heading_history[idx]
+            # Return the closer one
+            return before[1] if (timestamp - before[0]) < (after[0] - timestamp) else after[1]
 
     def handle_tcp_data(self):
-        while self.tcp_socket.bytesAvailable() >= 8:
-            data = self.tcp_socket.read(8)  # 2 floats: range and rel_az
-            if len(data) != 8:
-                continue
-            r, rel_az = struct.unpack('ff', data)
-            self.targets.append((r, rel_az))
+        self.tcp_buffer += self.tcp_socket.readAll().data()
+        while len(self.tcp_buffer) >= 16:
+            r, az_rel, timestamp = struct.unpack('ffQ', self.tcp_buffer[:16])
+            self.tcp_buffer = self.tcp_buffer[16:]
 
-        # After receiving all, update plot
-        if self.targets:
-            self.target_plotter.update_targets(self.targets, self.current_heading)
-            self.targets.clear()
+            heading = self.find_nearest_heading(timestamp)
+            self.target_plotter.update_targets([(r, az_rel)], heading)
