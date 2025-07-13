@@ -60,4 +60,4 @@ class Flight_Controller(QObject):
             targets.append((r, az_rel))
 
         if targets:
-            self.target_plotter.update_targets(targets, heading)
+            self.target_plotter.update_targets(targets)
